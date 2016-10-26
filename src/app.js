@@ -20,10 +20,6 @@ function intent(sources) {
     
   let testSelectValue$ = sources.DOM.select('.selectTest').events('change').map(e => e.target.value).startWith(testOperations[0].name);
   let addTestStep$ = sources.DOM.select('.addTest').events('click').mapTo('testSteps').compose(sampleCombine(testSelectValue$));
-
-  // let mouseDown$ = sources.DOM.select('.operation').events('mousedown').debug('mousedown');
-  // let mouseUp$ = sources.DOM.select('.operation').events('mouseup').debug('mouseup');
-  // mouseMove$: sources.globalMouseMove
   
   return xs.merge(addInitStep$, addTestStep$)
     .map(([arrayName, latestValue]) => 
@@ -43,15 +39,20 @@ function model(actions$) {
 function view(state$, sources) {
     return state$
       .map(state => {
-        let components = state.initSteps.map(step => step.component(sources).DOM);
-        return xs.combine(...components);
+        let initComponents = generateComponents(state.initSteps, sources);
+        let testComponents = generateComponents(state.testSteps, sources);
+
+        return xs.combine(
+          xs.combine(...initComponents),
+          xs.combine(...testComponents)
+        );
       })
       .flatten()
-      .map((...components) => 
+      .map(([initComponents, testComponents]) => 
         <div>
           <section>
             <p>Initialization</p>
-            {components}
+            {initComponents}
             <select className='selectInit'>
             {initializationOperations.map(op => <option value={op.name}>{op.name}</option>)}
             </select>
@@ -59,6 +60,7 @@ function view(state$, sources) {
           </section>
           <section>
             <p>Test Procedure</p>
+            {testComponents}
             <select className='selectTest'>
             {testOperations.map(op => <option value={op.name}>{op.name}</option>)}
             </select>
@@ -69,6 +71,18 @@ function view(state$, sources) {
           </section>
         </div>
       )
+}
+
+function generateComponents(steps, sources) {
+  return steps.map(step => step.component(sources).DOM)
+      .map(dom$ => dom$.map(dom => 
+        <div className="operationContainer">
+          <button disabled={steps.length===1}>move up</button>
+          <button disabled={steps.length===1}>move down</button>
+          {dom}
+          <button>delete this step</button>
+        </div>
+      ));
 }
 
 
