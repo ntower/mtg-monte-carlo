@@ -16,7 +16,7 @@ function model(actions) {
 
 function view(state$) {
     return xs.from([
-        <div>
+        <div className="operation">
             Shuffle             
             <select className="player">
                 <option value="0">Player A's</option>
@@ -60,4 +60,7 @@ function Component(sources) {
     return sinks;
 }
 
-export default sources => isolate(Component)(sources);
+export default {
+    name: 'shuffle',
+    component: sources => isolate(Component)(sources)
+}

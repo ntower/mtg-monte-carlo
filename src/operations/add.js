@@ -21,7 +21,7 @@ function model(actions) {
 
 function view(state$) {
     return state$.map(({value, name, player}) =>
-        <div>
+        <div className="operation">
             Add 
             <input type="text" className="count" value={value}/> 
             copies of 
@@ -60,4 +60,7 @@ function Component(sources) {
     return sinks;
 }
 
-export default sources => isolate(Component)(sources);
+export default {
+    name: 'add',
+    component: sources => isolate(Component)(sources)
+}
