@@ -10,30 +10,41 @@ const allOperations = [add, shuffle, draw];
 const initializationOperations = [add, shuffle];
 const testOperations = [draw, shuffle];
 
-const actions = {
-  add: (list, operation) => list.push(operation)
-}
-
 function intent(sources) {
-  let initSelectValue$ = sources.DOM.select('.selectInit').events('change').map(e => e.target.value).startWith(initializationOperations[0].name);
-  let addInitStep$ = sources.DOM.select('.addInit').events('click').mapTo('initSteps').compose(sampleCombine(initSelectValue$))
+  const initSelectValue$ = sources.DOM.select('.selectInit').events('change').map(e => e.target.value).startWith(initializationOperations[0].name);
+  const addInitStep$ = sources.DOM.select('.addInit').events('click').mapTo('initSteps').compose(sampleCombine(initSelectValue$));
     
-  let testSelectValue$ = sources.DOM.select('.selectTest').events('change').map(e => e.target.value).startWith(testOperations[0].name);
-  let addTestStep$ = sources.DOM.select('.addTest').events('click').mapTo('testSteps').compose(sampleCombine(testSelectValue$));
-  
-  return xs.merge(addInitStep$, addTestStep$)
-    .map(([arrayName, latestValue]) => 
+  const testSelectValue$ = sources.DOM.select('.selectTest').events('change').map(e => e.target.value).startWith(testOperations[0].name);
+  const addTestStep$ = sources.DOM.select('.addTest').events('click').mapTo('testSteps').compose(sampleCombine(testSelectValue$));
+
+  const add$ = xs.merge(addInitStep$, addTestStep$)
+    .map(([arrayName, latestValue, remove]) => 
       state => {
-        actions.add(state[arrayName], allOperations.find(o => o.name === latestValue));
+        state[arrayName].push(allOperations.find(o => o.name === latestValue));
         return state;
       }
-    )
+    );
+
+  const remove$ = sources.DOM.select('.remove').events('click').debug('remove')
+    .map(event =>
+      state => {
+        //TODO: support both lists
+        const arrayName = 'initSteps';
+        state[arrayName].splice(event.target.getAttribute('data-index'), 1);
+        return state;
+      }
+    );
+
+  const actions$ = xs.merge(add$, remove$);
+
+  return actions$
 }
 
 function model(actions$) {
-  return actions$.fold((state, actions) => {
-    return actions(state)
-  }, {initSteps: [], testSteps: []});
+  return actions$.fold(
+    (state, action) => action(state), 
+    {initSteps: [], testSteps: []}
+  );
 }
 
 function view(state$, sources) {
@@ -75,12 +86,12 @@ function view(state$, sources) {
 
 function generateComponents(steps, sources) {
   return steps.map(step => step.component(sources).DOM)
-      .map(dom$ => dom$.map(dom => 
+      .map((dom$, index) => dom$.map(dom => 
         <div className="operationContainer">
           <button disabled={steps.length===1}>move up</button>
           <button disabled={steps.length===1}>move down</button>
           {dom}
-          <button>delete this step</button>
+          <button className="remove" attrs-data-index={index}>delete this step</button>
         </div>
       ));
 }
