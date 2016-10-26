@@ -65,7 +65,7 @@ function view(state$, sources) {
             <button className='addTest'>Insert step</button>
           </section>
           <section>
-            <button className='run'>Run</button>
+            <button className='run' disabled>Run</button>
           </section>
         </div>
       )
